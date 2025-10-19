@@ -3,31 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Item Creator</title>
-<link rel="stylesheet" href="creator.css">
+<title>Admin Sender</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>Item Creator</h1>
+<h1>Admin Sender</h1>
 
-<div id="config">
-  <label>Send item list to:</label>
-  <input type="text" id="receiveEndpoint" value="https://your-receive-endpoint.com/items">
-  <label>Poll choices from:</label>
-  <input type="text" id="notifyEndpoint" value="https://your-receive-endpoint.com/selected">
-</div>
-
-<input id="itemInput" type="text" placeholder="Type item and press Enter">
-
+<input id="itemInput" placeholder="Type item and press Enter">
 <div id="items"></div>
 
 <script>
 const itemsDiv = document.getElementById('items');
-const input = document.getElementById('itemInput');
 let items = [];
 
-const receiveEndpointInput = document.getElementById('receiveEndpoint');
-const notifyEndpointInput = document.getElementById('notifyEndpoint');
+// Simple storage in memory for demo (replace with JSON file or backend on Render Web Service)
+let latestSelection = null;
 
+// Create item box
 function createItemBox(name) {
   const box = document.createElement('div');
   box.className = 'item-box';
@@ -37,49 +29,35 @@ function createItemBox(name) {
   delBtn.onclick = () => {
     items = items.filter(i => i !== name);
     box.remove();
-    sendUpdate();
   };
   box.appendChild(delBtn);
   itemsDiv.appendChild(box);
 }
 
-async function sendUpdate() {
-  try {
-    await fetch(receiveEndpointInput.value, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({items})
-    });
-  } catch (e) {
-    console.error('Error sending items:', e);
-  }
-}
-
-async function pollChoices() {
-  try {
-    const res = await fetch(notifyEndpointInput.value);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.selected) alert(`Item selected: ${data.selected}`);
-    }
-  } catch (e) {
-    console.error(e);
-  }
-  setTimeout(pollChoices, 2000);
-}
-
-input.addEventListener('keypress', e => {
+// Handle new item input
+document.getElementById('itemInput').addEventListener('keypress', e => {
   if (e.key === 'Enter') {
-    const val = input.value.trim();
+    const val = e.target.value.trim();
     if (!val) return;
     items.push(val);
     createItemBox(val);
-    sendUpdate();
-    input.value = '';
+    e.target.value = '';
   }
 });
 
-pollChoices();
+// Endpoint to serve JSON
+if (!window.location.pathname.endsWith('/choose')) {
+  window.fetchItems = () => {
+    return { items, latestSelection };
+  };
+  // Poll latestSelection every 2s
+  setInterval(() => {
+    if (latestSelection) {
+      alert(`Item selected: ${latestSelection}`);
+      latestSelection = null;
+    }
+  }, 2000);
+}
 </script>
 </body>
 </html>

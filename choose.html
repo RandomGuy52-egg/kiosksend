@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kiosk Touch</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>Choose Item</h1>
+<div id="buttons"></div>
+
+<script>
+const buttonsDiv = document.getElementById('buttons');
+
+// Fetch items from main site
+async function loadItems() {
+  try {
+    const res = await fetch('../index.html'); // fetch main site JS object
+    const text = await res.text();
+    const match = text.match(/window\.fetchItems\s*=\s*\(\)\s*=>\s*(\{[\s\S]*?\});/);
+    let data = { items: [] };
+    if (match) data = eval('(' + match[1] + ')'); // extract JS object
+    buttonsDiv.innerHTML = '';
+    data.items.forEach(item => {
+      const btn = document.createElement('button');
+      btn.className = 'touch-btn';
+      btn.textContent = item;
+      btn.onclick = () => sendSelection(item);
+      buttonsDiv.appendChild(btn);
+    });
+  } catch (e) {
+    buttonsDiv.innerHTML = 'Error loading items';
+    console.error(e);
+  }
+}
+
+// Send selection back to main site
+function sendSelection(item) {
+  // For demo: inject into main site object
+  if (window.opener && window.opener.fetchItems) {
+    window.opener.fetchItems().latestSelection = item;
+  } else {
+    alert(`Selected: ${item}`);
+  }
+}
+
+loadItems();
+</script>
+</body>
+</html>

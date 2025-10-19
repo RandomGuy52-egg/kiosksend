@@ -11,41 +11,36 @@
 <div id="buttons"></div>
 
 <script>
-const buttonsDiv = document.getElementById('buttons');
-
-// Fetch items from main site
-async function loadItems() {
-  try {
-    const res = await fetch('../index.html'); // fetch main site JS object
-    const text = await res.text();
-    const match = text.match(/window\.fetchItems\s*=\s*\(\)\s*=>\s*(\{[\s\S]*?\});/);
-    let data = { items: [] };
-    if (match) data = eval('(' + match[1] + ')'); // extract JS object
-    buttonsDiv.innerHTML = '';
-    data.items.forEach(item => {
+async function loadItems(){
+  try{
+    const res = await fetch('/items.json');
+    const data = await res.json();
+    const div = document.getElementById('buttons');
+    div.innerHTML = '';
+    data.items.forEach(item=>{
       const btn = document.createElement('button');
-      btn.className = 'touch-btn';
-      btn.textContent = item;
-      btn.onclick = () => sendSelection(item);
-      buttonsDiv.appendChild(btn);
+      btn.className='touch-btn';
+      btn.textContent=item;
+      btn.onclick=()=>sendSelection(item);
+      div.appendChild(btn);
     });
-  } catch (e) {
-    buttonsDiv.innerHTML = 'Error loading items';
-    console.error(e);
-  }
+  }catch(e){ console.error(e); }
 }
 
-// Send selection back to main site
-function sendSelection(item) {
-  // For demo: inject into main site object
-  if (window.opener && window.opener.fetchItems) {
-    window.opener.fetchItems().latestSelection = item;
-  } else {
-    alert(`Selected: ${item}`);
-  }
+// Send selection to main site
+async function sendSelection(item){
+  try{
+    await fetch('/selected',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({selected:item})
+    });
+    alert(`Sent: ${item}`);
+  }catch(e){ console.error(e); }
 }
 
 loadItems();
+setInterval(loadItems,5000); // refresh every 5s
 </script>
 </body>
 </html>

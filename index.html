@@ -13,51 +13,65 @@
 <div id="items"></div>
 
 <script>
-const itemsDiv = document.getElementById('items');
 let items = [];
 
-// Simple storage in memory for demo (replace with JSON file or backend on Render Web Service)
-let latestSelection = null;
-
-// Create item box
-function createItemBox(name) {
-  const box = document.createElement('div');
-  box.className = 'item-box';
-  box.innerHTML = `<span>${name}</span>`;
-  const delBtn = document.createElement('button');
-  delBtn.textContent = 'Delete';
-  delBtn.onclick = () => {
-    items = items.filter(i => i !== name);
-    box.remove();
-  };
-  box.appendChild(delBtn);
-  itemsDiv.appendChild(box);
+// Render items on page
+function renderItems() {
+  const itemsDiv = document.getElementById('items');
+  itemsDiv.innerHTML = '';
+  items.forEach((item,index) => {
+    const div = document.createElement('div');
+    div.className = 'item-box';
+    div.innerHTML = `<span>${item}</span><button>Delete</button>`;
+    div.querySelector('button').onclick = () => {
+      items.splice(index,1);
+      renderItems();
+    };
+    itemsDiv.appendChild(div);
+  });
 }
 
-// Handle new item input
+// Handle input
 document.getElementById('itemInput').addEventListener('keypress', e => {
-  if (e.key === 'Enter') {
+  if(e.key === 'Enter'){
     const val = e.target.value.trim();
-    if (!val) return;
+    if(!val) return;
     items.push(val);
-    createItemBox(val);
+    renderItems();
     e.target.value = '';
+    sendItems(); // send to kiosk endpoint
   }
 });
 
-// Endpoint to serve JSON
-if (!window.location.pathname.endsWith('/choose')) {
-  window.fetchItems = () => {
-    return { items, latestSelection };
-  };
-  // Poll latestSelection every 2s
-  setInterval(() => {
-    if (latestSelection) {
-      alert(`Item selected: ${latestSelection}`);
-      latestSelection = null;
-    }
-  }, 2000);
+// Send items to /items.json
+async function sendItems(){
+  try {
+    await fetch('/items.json', {
+      method: 'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({items})
+    });
+  } catch(e){ console.error(e); }
 }
+
+// Poll /selected for kiosk selections
+async function pollSelection(){
+  try{
+    const res = await fetch('/selected');
+    if(res.ok){
+      const data = await res.json();
+      if(data.selected){
+        alert(`Item selected: ${data.selected}`);
+        // optionally clear selection after processing
+        await fetch('/selected',{method:'DELETE'});
+      }
+    }
+  }catch(e){ console.error(e); }
+  setTimeout(pollSelection,2000);
+}
+
+renderItems();
+pollSelection();
 </script>
 </body>
 </html>

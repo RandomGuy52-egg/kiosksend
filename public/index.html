@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Main Site</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 40px; }
+    input { padding: 8px; }
+    button { padding: 6px 12px; margin-left: 8px; }
+    ul { list-style: none; padding: 0; }
+    li { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h2>Main Site</h2>
+  <input id="itemInput" placeholder="Enter item">
+  <button onclick="addItem()">Add</button>
+  <ul id="list"></ul>
+
+  <script>
+    const socket = io();
+    const list = document.getElementById("list");
+
+    socket.on("updateItems", (items) => {
+      list.innerHTML = "";
+      items.forEach(text => {
+        const li = document.createElement("li");
+        li.textContent = text;
+        const del = document.createElement("button");
+        del.textContent = "Delete";
+        del.onclick = () => socket.emit("deleteItem", text);
+        li.appendChild(del);
+        list.appendChild(li);
+      });
+    });
+
+    socket.on("itemPopup", (text) => {
+      alert("Item chosen: " + text);
+    });
+
+    function addItem() {
+      const val = document.getElementById("itemInput").value.trim();
+      if (val) socket.emit("addItem", val);
+      document.getElementById("itemInput").value = "";
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Choose Site</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 40px; }
+    button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h2>Choose Site</h2>
+  <div id="buttons"></div>
+
+  <script>
+    const socket = io();
+    const container = document.getElementById("buttons");
+
+    socket.on("updateItems", (items) => {
+      container.innerHTML = "";
+      items.forEach(text => {
+        const btn = document.createElement("button");
+        btn.textContent = text;
+        btn.onclick = () => socket.emit("itemChosen", text);
+        container.appendChild(btn);
+      });
+    });
+  </script>
+</body>
+</html>
